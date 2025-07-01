@@ -1,33 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Caça-Palavras - Banco de Dados</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caça Palavras - Banco de Dados</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🔎 Caça-Palavras: Banco de Dados</h1>
-  <p>Encontre as palavras abaixo:</p>
+    <div class="container">
+        <h1>Caça Palavras - Termos de Banco de Dados</h1>
+        
+        <div class="game-info">
+            <p>Encontre as palavras relacionadas a Banco de Dados na grade abaixo.</p>
+            <p>Palavras a encontrar: <span id="words-to-find"></span></p>
+            <p>Palavras encontradas: <span id="found-words">0</span>/10</p>
+        </div>
+        
+        <div class="word-search-container">
+            <table id="word-search">
+                <!-- A grade será gerada pelo JavaScript -->
+            </table>
+        </div>
+        
+        <div class="instructions">
+            <h2>Como jogar:</h2>
+            <ul>
+                <li>Clique e arraste para selecionar as palavras na grade</li>
+                <li>As palavras podem estar na horizontal, vertical ou diagonal</li>
+                <li>Elas podem estar escritas normalmente ou de trás para frente</li>
+            </ul>
+            
+            <h2>Explicação das Palavras:</h2>
+            <div id="word-explanations">
+                <!-- As explicações serão preenchidas pelo JavaScript -->
+            </div>
+        </div>
+        
+        <button id="reset-btn">Reiniciar Jogo</button>
+    </div>
 
-  <div id="word-list">
-    <ul id="palavras">
-      <li>tecnologia</li>
-      <li>proteção</li>
-      <li>ia</li>
-      <li>confiança</li>
-      <li>análise</li>
-      <li>ti</li>
-      <li>armazenamento</li>
-      <li>dados</li>
-      <li>digital</li>
-      <li>trabalho</li>
-    </ul>
-  </div>
-
-  <div id="grid"></div>
-  <p id="mensagem"></p>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
