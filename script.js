@@ -106,4 +106,242 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (direction === 1) { // Vertical
                         currentRow = row + i;
                         currentCol = col;
-                    } el
+                    } else { // Diagonal
+                        currentRow = row + i;
+                        currentCol = col + i;
+                    }
+                    
+                    // Verificar se a célula está vazia ou contém a mesma letra
+                    if (grid[currentRow][currentCol] !== '' && grid[currentRow][currentCol] !== word[i]) {
+                        canPlace = false;
+                        break;
+                    }
+                    
+                    cellsToCheck.push({ row: currentRow, col: currentCol, letter: word[i] });
+                }
+                
+                // Se puder colocar, inserir a palavra
+                if (canPlace) {
+                    cellsToCheck.forEach(cell => {
+                        grid[cell.row][cell.col] = cell.letter;
+                    });
+                    placed = true;
+                    
+                    // Registrar a palavra e suas posições
+                    foundWords.push({
+                        word: word,
+                        cells: cellsToCheck,
+                        found: false
+                    });
+                }
+            }
+        });
+    }
+
+    // Preencher espaços vazios com letras aleatórias
+    function fillEmptySpaces() {
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                if (grid[i][j] === '') {
+                    grid[i][j] = letters.charAt(Math.floor(Math.random() * letters.length));
+                }
+            }
+        }
+    }
+
+    // Renderizar grade no DOM
+    function renderGrid() {
+        wordSearchGrid.innerHTML = '';
+        
+        for (let i = 0; i < gridSize; i++) {
+            const row = document.createElement('tr');
+            
+            for (let j = 0; j < gridSize; j++) {
+                const cell = document.createElement('td');
+                cell.textContent = grid[i][j];
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                
+                // Eventos de seleção
+                cell.addEventListener('mousedown', handleMouseDown);
+                cell.addEventListener('mouseenter', handleMouseEnter);
+                cell.addEventListener('mouseup', handleMouseUp);
+                
+                row.appendChild(cell);
+            }
+            
+            wordSearchGrid.appendChild(row);
+        }
+    }
+
+    // Atualizar lista de palavras para encontrar
+    function updateWordsToFind() {
+        const wordsList = words.map(wordObj => wordObj.word).join(', ');
+        wordsToFindElement.textContent = wordsList;
+    }
+
+    // Adicionar explicações das palavras
+    function addExplanations() {
+        wordExplanationsElement.innerHTML = '';
+        
+        words.forEach(wordObj => {
+            const explanationDiv = document.createElement('div');
+            explanationDiv.className = 'word-explanation';
+            explanationDiv.innerHTML = `<strong>${wordObj.word}:</strong> ${wordObj.explanation}`;
+            wordExplanationsElement.appendChild(explanationDiv);
+        });
+    }
+
+    // Atualizar contador de palavras encontradas
+    function updateFoundWordsCount() {
+        const foundCount = foundWords.filter(word => word.found).length;
+        foundWordsElement.textContent = `${foundCount}/${words.length}`;
+    }
+
+    // Manipuladores de eventos
+    function handleMouseDown(e) {
+        isMouseDown = true;
+        selectedCells = [];
+        toggleCellSelection(e.target);
+        e.preventDefault(); // Evitar seleção de texto
+    }
+
+    function handleMouseEnter(e) {
+        if (isMouseDown) {
+            toggleCellSelection(e.target);
+        }
+    }
+
+    function handleMouseUp() {
+        isMouseDown = false;
+        checkSelectedWord();
+    }
+
+    // Alternar seleção de célula
+    function toggleCellSelection(cell) {
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        
+        // Verificar se a célula já está selecionada
+        const index = selectedCells.findIndex(c => c.row === row && c.col === col);
+        
+        if (index === -1) {
+            // Se não estiver selecionada, adicionar
+            selectedCells.push({ row, col, letter: cell.textContent });
+            cell.classList.add('selected');
+        } else {
+            // Se já estiver selecionada, remover
+            selectedCells.splice(index, 1);
+            cell.classList.remove('selected');
+        }
+    }
+
+    // Verificar se as células selecionadas formam uma palavra
+    function checkSelectedWord() {
+        if (selectedCells.length < 2) {
+            clearSelection();
+            return;
+        }
+        
+        // Ordenar células selecionadas
+        selectedCells.sort((a, b) => {
+            if (a.row !== b.row) return a.row - b.row;
+            return a.col - b.col;
+        });
+        
+        // Verificar direção da seleção
+        const firstCell = selectedCells[0];
+        const lastCell = selectedCells[selectedCells.length - 1];
+        
+        let direction;
+        if (firstCell.row === lastCell.row) {
+            direction = 'horizontal';
+        } else if (firstCell.col === lastCell.col) {
+            direction = 'vertical';
+        } else if (Math.abs(firstCell.row - lastCell.row) === Math.abs(firstCell.col - lastCell.col)) {
+            direction = 'diagonal';
+        } else {
+            clearSelection();
+            return;
+        }
+        
+        // Verificar se todas as células estão na mesma linha/coluna/diagonal
+        let isValid = true;
+        for (let i = 1; i < selectedCells.length; i++) {
+            const prev = selectedCells[i - 1];
+            const curr = selectedCells[i];
+            
+            if (direction === 'horizontal' && curr.row !== prev.row) {
+                isValid = false;
+                break;
+            } else if (direction === 'vertical' && curr.col !== prev.col) {
+                isValid = false;
+                break;
+            } else if (direction === 'diagonal' && 
+                      Math.abs(curr.row - prev.row) !== Math.abs(curr.col - prev.col)) {
+                isValid = false;
+                break;
+            }
+        }
+        
+        if (!isValid) {
+            clearSelection();
+            return;
+        }
+        
+        // Construir palavra a partir das células selecionadas
+        const selectedWord = selectedCells.map(cell => cell.letter).join('');
+        
+        // Verificar se a palavra está na lista
+        const foundWord = foundWords.find(word => 
+            word.word === selectedWord || 
+            word.word === selectedWord.split('').reverse().join('')
+        );
+        
+        if (foundWord && !foundWord.found) {
+            // Marcar palavra como encontrada
+            foundWord.found = true;
+            
+            // Marcar células como encontradas
+            const cells = document.querySelectorAll('td');
+            selectedCells.forEach(cell => {
+                cells.forEach(td => {
+                    if (parseInt(td.dataset.row) === cell.row && 
+                        parseInt(td.dataset.col) === cell.col) {
+                        td.classList.remove('selected');
+                        td.classList.add('found');
+                    }
+                });
+            });
+            
+            // Atualizar contador
+            updateFoundWordsCount();
+            
+            // Verificar se todas as palavras foram encontradas
+            if (foundWords.every(word => word.found)) {
+                setTimeout(() => {
+                    alert('Parabéns! Você encontrou todas as palavras!');
+                }, 300);
+            }
+        } else {
+            clearSelection();
+        }
+    }
+
+    // Limpar seleção
+    function clearSelection() {
+        const cells = document.querySelectorAll('td');
+        cells.forEach(cell => {
+            cell.classList.remove('selected');
+        });
+        selectedCells = [];
+    }
+
+    // Reiniciar jogo
+    resetButton.addEventListener('click', initGame);
+
+    // Iniciar o jogo
+    initGame();
+});
