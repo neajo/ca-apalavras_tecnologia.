@@ -11,56 +11,49 @@ const palavras = [
   "trabalho"
 ];
 
-const grid = document.getElementById("grid");
-const mensagem = document.getElementById("mensagem");
+const gridSize = 12;
+let matriz = Array(gridSize)
+  .fill(null)
+  .map(() => Array(gridSize).fill(""));
 
-const tamanho = 12;
-let matriz = [];
+const grid = document.getElementById("grid");
 let selecionadas = [];
 let encontradas = [];
 
-function criarMatriz() {
-  matriz = Array.from({ length: tamanho }, () =>
-    Array.from({ length: tamanho }, () =>
-      String.fromCharCode(65 + Math.floor(Math.random() * 26))
-    )
-  );
-}
-
-function posicionarPalavras() {
+function colocarPalavrasNaGrade() {
   palavras.forEach(palavra => {
-    let colocada = false;
     palavra = palavra.toUpperCase();
+    let colocada = false;
 
     while (!colocada) {
-      const dir = Math.floor(Math.random() * 8); // direção 0-7
-      const dx = [1, -1, 0, 0, 1, 1, -1, -1][dir];
-      const dy = [0, 0, 1, -1, 1, -1, 1, -1][dir];
+      const direcao = Math.floor(Math.random() * 8);
+      const dx = [1, -1, 0, 0, 1, -1, 1, -1][direcao];
+      const dy = [0, 0, 1, -1, 1, 1, -1, -1][direcao];
 
-      let x = Math.floor(Math.random() * tamanho);
-      let y = Math.floor(Math.random() * tamanho);
+      let x = Math.floor(Math.random() * gridSize);
+      let y = Math.floor(Math.random() * gridSize);
 
-      let ok = true;
+      let cabem = true;
 
       for (let i = 0; i < palavra.length; i++) {
+        let nx = x + dx * i;
+        let ny = y + dy * i;
+
         if (
-          x < 0 || y < 0 || x >= tamanho || y >= tamanho ||
-          (matriz[y][x] !== undefined && matriz[y][x] !== palavra[i])
+          nx < 0 || ny < 0 ||
+          nx >= gridSize || ny >= gridSize ||
+          (matriz[ny][nx] && matriz[ny][nx] !== palavra[i])
         ) {
-          ok = false;
+          cabem = false;
           break;
         }
-        x += dx;
-        y += dy;
       }
 
-      if (ok) {
-        x = x - dx * palavra.length;
-        y = y - dy * palavra.length;
+      if (cabem) {
         for (let i = 0; i < palavra.length; i++) {
-          matriz[y][x] = palavra[i];
-          x += dx;
-          y += dy;
+          let nx = x + dx * i;
+          let ny = y + dy * i;
+          matriz[ny][nx] = palavra[i];
         }
         colocada = true;
       }
@@ -68,80 +61,90 @@ function posicionarPalavras() {
   });
 }
 
-function desenharMatriz() {
-  grid.innerHTML = "";
-  for (let y = 0; y < tamanho; y++) {
-    for (let x = 0; x < tamanho; x++) {
-      const letra = document.createElement("div");
-      letra.classList.add("letra");
-      letra.dataset.x = x;
-      letra.dataset.y = y;
-      letra.textContent = matriz[y][x];
-      letra.addEventListener("click", selecionarLetra);
-      grid.appendChild(letra);
+function completarComLetrasAleatorias() {
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      if (!matriz[y][x]) {
+        matriz[y][x] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      }
     }
   }
 }
 
-function selecionarLetra(e) {
+function desenharGrade() {
+  grid.innerHTML = "";
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const div = document.createElement("div");
+      div.classList.add("letra");
+      div.textContent = matriz[y][x];
+      div.dataset.x = x;
+      div.dataset.y = y;
+      div.addEventListener("click", clicarLetra);
+      grid.appendChild(div);
+    }
+  }
+}
+
+function clicarLetra(e) {
   const el = e.target;
   if (el.classList.contains("certa")) return;
 
   el.classList.toggle("selecionada");
-
   const pos = `${el.dataset.x},${el.dataset.y}`;
-  const index = selecionadas.indexOf(pos);
+  const i = selecionadas.indexOf(pos);
 
-  if (index === -1) {
-    selecionadas.push(pos);
+  if (i >= 0) {
+    selecionadas.splice(i, 1);
   } else {
-    selecionadas.splice(index, 1);
+    selecionadas.push(pos);
   }
 
-  verificarPalavra();
+  verificarSelecao();
 }
 
-function verificarPalavra() {
-  if (selecionadas.length < 2) return;
-
+function verificarSelecao() {
   const letras = selecionadas.map(pos => {
     const [x, y] = pos.split(",").map(Number);
     return matriz[y][x];
   });
 
-  const tentativa = letras.join("");
-  const tentativaReversa = letras.reverse().join("");
+  const palavraTentativa = letras.join("");
+  const palavraReversa = letras.reverse().join("");
+  const todas = palavras.map(p => p.toUpperCase());
 
-  const palavrasUpper = palavras.map(p => p.toUpperCase());
+  let encontrada = "";
 
-  if (palavrasUpper.includes(tentativa) || palavrasUpper.includes(tentativaReversa)) {
+  if (todas.includes(palavraTentativa)) {
+    encontrada = palavraTentativa;
+  } else if (todas.includes(palavraReversa)) {
+    encontrada = palavraReversa;
+  }
+
+  if (encontrada) {
     selecionadas.forEach(pos => {
       const [x, y] = pos.split(",").map(Number);
-      const index = y * tamanho + x;
+      const index = y * gridSize + x;
       grid.children[index].classList.remove("selecionada");
       grid.children[index].classList.add("certa");
     });
 
-    const index = palavrasUpper.indexOf(tentativa);
-    const palavraCerta = index !== -1 ? palavras[index] : palavras[palavrasUpper.indexOf(tentativaReversa)];
+    document.querySelectorAll("#palavras li").forEach(li => {
+      if (li.textContent.toUpperCase() === encontrada) {
+        li.classList.add("encontrada");
+      }
+    });
 
-    if (!encontradas.includes(palavraCerta)) {
-      encontradas.push(palavraCerta);
-      document.querySelectorAll("#palavras li").forEach(li => {
-        if (li.textContent === palavraCerta) {
-          li.classList.add("encontrada");
-        }
-      });
-    }
+    encontradas.push(encontrada);
+    selecionadas = [];
 
     if (encontradas.length === palavras.length) {
-      mensagem.textContent = "🎉 Parabéns! Você encontrou todas as palavras!";
+      document.getElementById("mensagem").textContent = "🎉 Você encontrou todas as palavras!";
     }
-
-    selecionadas = [];
   }
 }
 
-criarMatriz();
-posicionarPalavras();
-desenharMatriz();
+// EXECUÇÃO
+colocarPalavrasNaGrade();
+completarComLetrasAleatorias();
+desenharGrade();
